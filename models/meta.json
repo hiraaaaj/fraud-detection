@@ -1,0 +1,36 @@
+{
+  "best_model": "HistGradientBoosting",
+  "threshold": 0.09000000000000001,
+  "features": [
+    "log_amount",
+    "amount_ratio",
+    "hour",
+    "is_night",
+    "city_mismatch",
+    "device_new",
+    "international",
+    "risky_merchant",
+    "secs_since_last_tx",
+    "tx_count_24h",
+    "merchant_grocery",
+    "merchant_food",
+    "merchant_fuel",
+    "merchant_travel",
+    "merchant_electronics",
+    "merchant_gaming",
+    "merchant_jewellery",
+    "merchant_utilities",
+    "merchant_crypto"
+  ],
+  "metrics": {
+    "Model": "HistGradientBoosting",
+    "PR_AUC": 0.9909,
+    "ROC_AUC": 0.9997,
+    "Precision": 0.8389,
+    "Recall": 0.9892,
+    "F1": 0.9079,
+    "Threshold": 0.09,
+    "Cost_Rs": 5697.64
+  },
+  "no_model_cost": 1015422.95
+}

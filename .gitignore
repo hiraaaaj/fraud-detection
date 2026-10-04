@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+fraud.db
+data/transactions.csv

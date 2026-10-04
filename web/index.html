@@ -1,0 +1,50 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FraudShield</title><style>
+:root{--bg:#0f172a;--card:#1e293b;--tx:#e2e8f0;--mut:#94a3b8;--g:#22c55e;--o:#f59e0b;--r:#ef4444;--b:#6366f1}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--tx)}
+header{padding:16px 24px;background:linear-gradient(90deg,#4338ca,#0ea5e9);font-size:22px;font-weight:700}
+main{display:grid;grid-template-columns:340px 1fr;gap:16px;padding:16px;max-width:1300px;margin:auto}
+@media(max-width:850px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border-radius:12px;padding:16px}h3{margin:0 0 12px}
+label{display:block;font-size:12px;color:var(--mut);margin:8px 0 3px}
+input,select{width:100%;padding:8px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:var(--tx)}
+button{width:100%;margin-top:14px;padding:11px;border:0;border-radius:8px;background:var(--b);color:#fff;font-weight:700;cursor:pointer}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}.stat b{font-size:24px;display:block}.stat span{color:var(--mut);font-size:12px}
+#res{margin-top:14px}.pill{padding:3px 10px;border-radius:99px;font-weight:700;font-size:12px}
+.LOW{background:var(--g)}.MEDIUM{background:var(--o)}.HIGH{background:var(--r)}
+.bar{height:8px;border-radius:4px;background:#334155;margin:4px 0}.bar i{display:block;height:100%;border-radius:4px;background:var(--b)}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:7px;border-bottom:1px solid #334155;text-align:left}
+.sm{width:auto;margin:0 2px;padding:3px 8px;font-size:11px}
+</style></head><body><header>🛡️ FraudShield — Real-Time Fraud Detection</header><main>
+<div class="card"><h3>New transaction</h3>
+<label>Amount (₹)</label><input id="amount" type="number" value="450">
+<label>User's usual amount (₹)</label><input id="avg_amount" type="number" value="500">
+<label>Merchant</label><select id="merchant"></select>
+<label>Hour (0-23)</label><input id="hour" type="number" value="15" min="0" max="23">
+<label>City</label><select id="city"></select><label>Home city</label><select id="home_city"></select>
+<label>Minutes since last tx</label><input id="gap_min" type="number" value="2000">
+<label>Tx in last 24h</label><input id="tx_count_24h" type="number" value="0">
+<label><input id="device_new" type="checkbox" style="width:auto"> New device</label>
+<label><input id="international" type="checkbox" style="width:auto"> International</label>
+<button onclick="go()">Analyse</button>
+<button style="background:#be123c" onclick="demo()">Load fraud example</button><div id="res"></div></div>
+<div><div class="stats" id="stats"></div>
+<div class="card"><h3>Live transactions (analyst review)</h3><table id="tb"></table></div></div></main>
+<script>
+const M=["grocery","food","fuel","travel","electronics","gaming","jewellery","utilities","crypto"],C=["Delhi","Mumbai","Kanpur","Lucknow","Bengaluru","Pune","Kolkata","Chennai"];
+const $=i=>document.getElementById(i),fill=(id,a,d)=>$(id).innerHTML=a.map(x=>`<option ${x==d?'selected':''}>${x}</option>`).join('');
+fill('merchant',M,'grocery');fill('city',C,'Kanpur');fill('home_city',C,'Kanpur');
+async function go(){const b={};['amount','avg_amount','hour','gap_min','tx_count_24h'].forEach(k=>b[k]=+$(k).value);
+['merchant','city','home_city'].forEach(k=>b[k]=$(k).value);['device_new','international'].forEach(k=>b[k]=$(k).checked?1:0);
+const r=await(await fetch('/api/score',{method:'POST',body:JSON.stringify(b)})).json();
+if(r.error){$('res').textContent=r.error;return}
+const mx=Math.max(...r.reasons.map(x=>x.impact),.01);
+$('res').innerHTML=`<h2>${(r.probability*100).toFixed(1)}% <span class="pill ${r.risk}">${r.risk}</span></h2><p>👉 ${r.action}</p>`+
+(r.reasons.length?'<b>Why?</b>':'')+r.reasons.map(x=>`<div style="font-size:12px;margin-top:6px">${x.factor}<div class="bar"><i style="width:${x.impact/mx*100}%"></i></div></div>`).join('');load()}
+function demo(){Object.entries({amount:45000,hour:3,gap_min:1.5,tx_count_24h:2}).forEach(([k,v])=>$(k).value=v);$('merchant').value='crypto';$('city').value='Mumbai';$('device_new').checked=$('international').checked=true}
+async function rev(id,s){await fetch('/api/review/'+id,{method:'POST',body:JSON.stringify({status:s})});load()}
+async function load(){const s=await(await fetch('/api/stats')).json(),t=await(await fetch('/api/transactions')).json();
+$('stats').innerHTML=[['Total',s.total],['Flagged',s.flagged],['₹ at risk',Math.round(s.amount_at_risk).toLocaleString()],['Model',s.model]].map(([a,b])=>`<div class="card stat"><b>${b}</b><span>${a}</span></div>`).join('');
+$('tb').innerHTML='<tr><th>#</th><th>₹</th><th>Merchant</th><th>Prob</th><th>Risk</th><th>Status</th><th></th></tr>'+t.map(x=>`<tr><td>${x.id}</td><td>${x.amount}</td><td>${x.merchant}</td><td>${(x.probability*100).toFixed(0)}%</td><td><span class="pill ${x.risk}">${x.risk}</span></td><td>${x.status}</td><td>${x.risk!='LOW'?`<button class="sm" onclick="rev(${x.id},'confirmed_fraud')">Fraud</button><button class="sm" style="background:#475569" onclick="rev(${x.id},'false_alarm')">OK</button>`:''}</td></tr>`).join('')}
+load();setInterval(load,5000);
+</script></body></html>

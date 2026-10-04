@@ -1,0 +1,4 @@
+Model,PR_AUC,ROC_AUC,Precision,Recall,F1,Threshold,Cost_Rs
+HistGradientBoosting,0.9909,0.9997,0.8389,0.9892,0.9079,0.09,5697.64
+Random Forest,0.9899,0.9998,0.6987,0.9892,0.819,0.16,8997.64
+Logistic Regression,0.9851,0.9996,0.7412,0.9857,0.8462,0.68,8323.35
